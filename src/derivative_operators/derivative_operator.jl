@@ -38,17 +38,16 @@ function nonlinear_diffusion!{N}(du::AbstractVector{T}, second_differential_orde
 
     @assert approx_order>1 "approximation_order must be greater than 1."
     if first_differential_order > 0 
-    du .= (CenteredDifference{N}(first_differential_order,approx_order,dx,nknots)*q).*(CenteredDifference{N}(second_differential_order,approx_order,dx,nknots)*p)
+    broadcast!(*,du,CenteredDifference{N}(first_differential_order,approx_order,dx,nknots)*q,CenteredDifference{N}(second_differential_order,approx_order,dx,nknots)*p)
     else 
-    du .= q[2:(nknots + 1)].*(CenteredDifference{N}(second_differential_order,approx_order,dx,nknots)*p)
+    broadcast!(*,du,q[2:(nknots + 1)],(CenteredDifference{N}(first_differential_order,approx_order,dx,nknots)*q).*(CenteredDifference{N}(second_differential_order,approx_order,dx,nknots)*p))
     end
 
     for l = 1:(second_differential_order - 1)
-    du .= du .+ binomial(second_differential_order,l)*(CenteredDifference{N}(l + first_differential_order,approx_order,dx,nknots)*q).*(CenteredDifference{N}(second_differential_order - l,approx_order,dx,nknots)*p)
+    broadcast!(+,du,du,binomial(second_differential_order,l)*(CenteredDifference{N}(l + first_differential_order,approx_order,dx,nknots)*q).*(CenteredDifference{N}(second_differential_order - l,approx_order,dx,nknots)*p))
     end
 
-    du .= du .+ (CenteredDifference{N}(first_differential_order + second_differential_order,approx_order,dx,nknots)*q).*p[2:(nknots + 1)]
-
+    broadcast!(+,du,du,(CenteredDifference{N}(first_differential_order + second_differential_order,approx_order,dx,nknots)*q).*p[2:(nknots + 1)])
 end
 
 # An out of place workaround for the mutating version
